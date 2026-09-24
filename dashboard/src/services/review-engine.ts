@@ -31,11 +31,14 @@ export function calculateNextReview(currentMemory: Memory | null, rating: Review
       break;
   }
 
-  // Cap the count to the maximum available bucket index to prevent out-of-bounds
+  // The nextCount starts at 1 for the first bucket (1 day), 
+  // so we subtract 1 to get the 0-based array index.
+  // Exception: if count is 0 (forgot), we still use bucket 0 (1 day).
+  const bucketIndex = Math.max(0, nextCount - 1);
   const maxBucket = REVIEW_INTERVALS.length - 1;
-  const effectiveCount = Math.min(nextCount, maxBucket);
+  const effectiveBucket = Math.min(bucketIndex, maxBucket);
   
-  const intervalDays = REVIEW_INTERVALS[effectiveCount];
+  const intervalDays = REVIEW_INTERVALS[effectiveBucket];
   
   const nextDate = new Date();
   nextDate.setDate(nextDate.getDate() + intervalDays);

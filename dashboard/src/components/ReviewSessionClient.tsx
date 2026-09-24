@@ -6,6 +6,7 @@ import { submitReview } from '@/app/actions';
 import { ReviewRating } from '@/services/review-engine';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import CodeViewer from './CodeViewer';
 
 type Step = 'RECALL' | 'REVEAL' | 'DONE';
 
@@ -124,11 +125,10 @@ export default function ReviewSessionClient({ problem }: { problem: ProblemDetai
               </span>
             </div>
             
-            <div className="p-4 bg-[#1e1e1e] overflow-x-auto">
-              <pre className="text-sm text-slate-300 font-mono">
-                <code>{latestSubmission?.solution_code || 'No code found'}</code>
-              </pre>
-            </div>
+            <CodeViewer 
+              code={latestSubmission?.solution_code || 'No code found'} 
+              language={latestSubmission?.language || 'text'} 
+            />
             
             {otherSubmissionsCount > 0 && (
               <div className="bg-slate-50 border-t border-slate-200 px-4 py-3 text-sm text-slate-600 flex justify-between items-center">

@@ -162,7 +162,7 @@ function getSolutionCodeFromDOM(): string {
   const viewLines = document.querySelector('.view-lines');
   if (viewLines) {
     const lines = Array.from(viewLines.children).map(line => replaceNbsp(line.textContent || ''));
-    const code = lines.join('\\n');
+    const code = lines.join('\n');
     if (code.trim().length > 0) return code;
   }
   
@@ -170,7 +170,7 @@ function getSolutionCodeFromDOM(): string {
   const codeMirror = document.querySelector('.CodeMirror-code');
   if (codeMirror) {
     const lines = Array.from(codeMirror.children).map(line => replaceNbsp(line.textContent || ''));
-    const code = lines.join('\\n');
+    const code = lines.join('\n');
     if (code.trim().length > 0) return code;
   }
   

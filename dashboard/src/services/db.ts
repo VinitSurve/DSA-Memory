@@ -11,6 +11,14 @@ export type ProblemDetail = Problem & {
   memory: Memory | null;
 };
 
+// Data boundary helper: some legacy submissions have literal '\\n' stored instead of actual newlines.
+function normalizeSubmission(sub: Submission): Submission {
+  if (sub && sub.solution_code && sub.solution_code.includes('\\n')) {
+    return { ...sub, solution_code: sub.solution_code.replace(/\\n/g, '\n') };
+  }
+  return sub;
+}
+
 export async function getDashboardStats(): Promise<DashboardStats> {
   const [problemsRes, submissionsRes, dueRes] = await Promise.all([
     supabase.from('problems').select('id', { count: 'exact', head: true }),
@@ -62,7 +70,7 @@ export async function getProblems(): Promise<ProblemWithMeta[]> {
         count: subs.length,
         latest: latestSub
       },
-      memory: (row.memories && row.memories.length > 0) ? row.memories[0] : null
+      memory: Array.isArray(row.memories) ? (row.memories.length > 0 ? row.memories[0] : null) : (row.memories || null)
     };
   });
 }
@@ -85,8 +93,8 @@ export async function getProblemById(id: string): Promise<ProblemDetail | null> 
 
   return {
     ...data,
-    submissions: data.submissions?.sort((a: any, b: any) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime()) || [],
-    memory: (data.memories && data.memories.length > 0) ? data.memories[0] : null
+    submissions: (data.submissions?.map(normalizeSubmission) || []).sort((a: any, b: any) => new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime()),
+    memory: Array.isArray(data.memories) ? (data.memories.length > 0 ? data.memories[0] : null) : (data.memories || null)
   };
 }
 
@@ -112,7 +120,7 @@ export async function getReviewQueue() {
   const upcoming: ProblemWithMeta[] = [];
 
   for (const row of data) {
-    const memory = row.memories && row.memories.length > 0 ? row.memories[0] : null;
+    const memory = Array.isArray(row.memories) ? (row.memories.length > 0 ? row.memories[0] : null) : (row.memories || null);
     if (!memory) continue;
 
     const subs = row.submissions || [];
