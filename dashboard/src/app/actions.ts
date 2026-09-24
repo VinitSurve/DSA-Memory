@@ -13,3 +13,16 @@ export async function submitReview(problemId: string, rating: ReviewRating) {
   }
   return { success: false };
 }
+
+import { evaluateRecall, EvaluationResult } from '@/services/evaluator';
+
+export async function runEvaluation(
+  problemTitle: string,
+  userApproach: string,
+  userTime: string,
+  userSpace: string,
+  referenceCode: string,
+  language: string
+): Promise<EvaluationResult | null> {
+  return evaluateRecall(problemTitle, userApproach, userTime, userSpace, referenceCode, language);
+}
