@@ -1,0 +1,40 @@
+{
+  "manifest_version": 3,
+  "name": "DSA Memory",
+  "version": "1.0.0",
+  "description": "Automatically capture and remember your successful HackerRank submissions.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://*.hackerrank.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.hackerrank.com/challenges/*"
+      ],
+      "js": [
+        "monaco-bridge.js"
+      ],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    },
+    {
+      "matches": [
+        "https://www.hackerrank.com/challenges/*"
+      ],
+      "js": [
+        "hackerrank.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

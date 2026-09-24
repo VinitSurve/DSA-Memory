@@ -1,0 +1,22 @@
+{
+  "name": "dsa-memory",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "vite build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "devDependencies": {
+    "@types/chrome": "^0.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.0",
+    "vite-plugin-static-copy": "^4.1.1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.117.1"
+  }
+}
