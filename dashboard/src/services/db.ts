@@ -89,3 +89,90 @@ export async function getProblemById(id: string): Promise<ProblemDetail | null> 
     memory: (data.memories && data.memories.length > 0) ? data.memories[0] : null
   };
 }
+
+export async function getReviewQueue() {
+  const now = new Date().toISOString();
+  
+  const { data, error } = await supabase
+    .from('problems')
+    .select(`
+      *,
+      submissions ( id, submitted_at ),
+      memories!inner ( * )
+    `)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching review queue:', error);
+    return { due: [], unreviewed: [], upcoming: [] };
+  }
+
+  const due: ProblemWithMeta[] = [];
+  const unreviewed: ProblemWithMeta[] = [];
+  const upcoming: ProblemWithMeta[] = [];
+
+  for (const row of data) {
+    const memory = row.memories && row.memories.length > 0 ? row.memories[0] : null;
+    if (!memory) continue;
+
+    const subs = row.submissions || [];
+    const latestSub = subs.length > 0 
+      ? subs.reduce((latest: string, sub: any) => sub.submitted_at > latest ? sub.submitted_at : latest, subs[0].submitted_at)
+      : null;
+
+    const mappedProblem: ProblemWithMeta = {
+      ...row,
+      submissions: { count: subs.length, latest: latestSub },
+      memory
+    };
+
+    if (memory.next_review_at === null && memory.review_count === 0) {
+      unreviewed.push(mappedProblem);
+    } else if (memory.next_review_at && memory.next_review_at <= now) {
+      due.push(mappedProblem);
+    } else if (memory.next_review_at && memory.next_review_at > now) {
+      upcoming.push(mappedProblem);
+    }
+  }
+
+  // Sort upcoming by soonest first
+  upcoming.sort((a, b) => {
+    if (!a.memory?.next_review_at || !b.memory?.next_review_at) return 0;
+    return new Date(a.memory.next_review_at).getTime() - new Date(b.memory.next_review_at).getTime();
+  });
+
+  return { due, unreviewed, upcoming };
+}
+
+import { calculateNextReview, ReviewRating } from './review-engine';
+
+export async function completeReview(problemId: string, rating: ReviewRating): Promise<{ success: boolean, nextReviewAt?: string }> {
+  // 1. Fetch current memory
+  const { data: memories } = await supabase
+    .from('memories')
+    .select('*')
+    .eq('problem_id', problemId);
+    
+  const currentMemory = memories && memories.length > 0 ? memories[0] : null;
+
+  // 2. Calculate next state
+  const nextState = calculateNextReview(currentMemory, rating);
+
+  // 3. Update memory
+  const { error } = await supabase
+    .from('memories')
+    .update({
+      review_count: nextState.review_count,
+      last_reviewed_at: nextState.last_reviewed_at,
+      next_review_at: nextState.next_review_at,
+      updated_at: new Date().toISOString()
+    })
+    .eq('problem_id', problemId);
+
+  if (error) {
+    console.error('Failed to complete review:', error);
+    return { success: false };
+  }
+  
+  return { success: true, nextReviewAt: nextState.next_review_at || undefined };
+}
