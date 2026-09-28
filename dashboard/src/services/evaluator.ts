@@ -30,19 +30,20 @@ export async function evaluateRecall(
   userTime: string,
   userSpace: string,
   referenceCode: string,
-  language: string
+  language: string,
+  problemStatement: string = ""
 ): Promise<EvaluationResult | null> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.warn("GEMINI_API_KEY is not set. Skipping AI evaluation.");
     return null;
   }
-  
+
   const ai = new GoogleGenAI({ apiKey });
 
-  const prompt = `You are a computer science tutor evaluating a student's recall of a Data Structures and Algorithms problem.
-
-The original problem statement is unavailable.
+  const problemContext = problemStatement
+    ? `Problem Statement & Constraints:\n${problemStatement}`
+    : `The original problem statement is unavailable.
 
 Do NOT invent constraints or input definitions that are not supported
 by the available context.
@@ -53,7 +54,11 @@ return the corresponding evaluation as "uncertain" rather than
 pretending certainty.
 
 Do NOT infer that a variable number of scores exists merely because the
-reference implementation reads a variable-length input line.
+reference implementation reads a variable-length input line.`;
+
+  const prompt = `You are a computer science tutor evaluating a student's recall of a Data Structures and Algorithms problem.
+
+${problemContext}
 
 Problem Title: ${problemTitle}
 Reference Solution Language: ${language}
@@ -76,7 +81,7 @@ Evaluate the student's recall against the reference solution and general princip
    - Explain why it is incorrect or what is missing if partial.
 
 2. TIME COMPLEXITY: 
-   - Infer the true expected time complexity from the reference solution and input variables.
+   - Judge the time complexity of the STUDENT'S DESCRIBED APPROACH given the problem constraints, not simply copy the complexity of the reference solution.
    - DO NOT use simple string matching. You must semantically compare their answer.
    - Equivalent notations MUST be accepted (e.g., O(N*M) is the exact same as O(M*N) or O(N × M)). 
    - If the original problem constraints are unavailable and the complexity depends on constraints that cannot be confidently established from the available context, return 'uncertain' instead of 'incorrect'.
@@ -84,7 +89,7 @@ Evaluate the student's recall against the reference solution and general princip
    - Only return 'incorrect' if it can be confidently established as wrong from the available context.
 
 3. SPACE COMPLEXITY: 
-   - Infer the true expected space complexity from the reference solution.
+   - Judge the space complexity of the STUDENT'S DESCRIBED APPROACH given the problem constraints, not simply copy the complexity of the reference solution.
    - DO NOT use simple string matching. Evaluate semantically.
    - If constraints are missing, return 'uncertain' instead of 'incorrect'. Do NOT invent variables.
 
@@ -110,7 +115,7 @@ Return ONLY a valid JSON object matching this schema:
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.8-flash',
       contents: prompt,
       config: {
         responseMimeType: "application/json",
@@ -119,7 +124,7 @@ Return ONLY a valid JSON object matching this schema:
 
     const text = response.text;
     if (!text) return null;
-    
+
     let parsed: any;
     try {
       parsed = JSON.parse(text);
@@ -133,7 +138,7 @@ Return ONLY a valid JSON object matching this schema:
       console.error("AI response failed Zod schema validation", result.error);
       return null;
     }
-    
+
     return result.data;
   } catch (error) {
     console.error("AI Evaluation failed:", error);
