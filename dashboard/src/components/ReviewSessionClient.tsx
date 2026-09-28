@@ -164,34 +164,49 @@ export default function ReviewSessionClient({ problem }: { problem: ProblemDetai
                   <div className={`p-4 rounded-lg border ${evaluation.approach.status === 'correct' ? 'bg-green-50 border-green-200' : evaluation.approach.status === 'partial' ? 'bg-amber-50 border-amber-200' : evaluation.approach.status === 'uncertain' ? 'bg-slate-100 border-slate-200' : 'bg-red-50 border-red-200'}`}>
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-semibold text-slate-900">Approach</h3>
-                      <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded ${evaluation.approach.status === 'correct' ? 'text-green-700 bg-green-100' : evaluation.approach.status === 'partial' ? 'text-amber-700 bg-amber-100' : evaluation.approach.status === 'uncertain' ? 'text-slate-600 bg-slate-200' : 'text-red-700 bg-red-100'}`}>{evaluation.approach.status}</span>
+                      <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded ${evaluation.approach.status === 'correct' ? 'text-green-700 bg-green-100' : evaluation.approach.status === 'partial' ? 'text-amber-700 bg-amber-100' : evaluation.approach.status === 'uncertain' ? 'text-slate-600 bg-slate-200' : 'text-red-700 bg-red-100'}`}>
+                        {evaluation.approach.status === 'uncertain' ? '? Uncertain' : evaluation.approach.status}
+                      </span>
                     </div>
                     <p className="text-sm text-slate-700">{evaluation.approach.feedback}</p>
+                    {evaluation.approach.status === 'uncertain' && (
+                      <p className="text-xs text-slate-500 mt-2 italic">The available problem information is insufficient to confidently evaluate this.</p>
+                    )}
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className={`p-4 rounded-lg border ${evaluation.time_complexity.status === 'correct' ? 'bg-green-50 border-green-200' : evaluation.time_complexity.status === 'partial' ? 'bg-amber-50 border-amber-200' : evaluation.time_complexity.status === 'uncertain' ? 'bg-slate-100 border-slate-200' : 'bg-red-50 border-red-200'}`}>
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="font-semibold text-slate-900">Time</h3>
-                        <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded ${evaluation.time_complexity.status === 'correct' ? 'text-green-700 bg-green-100' : evaluation.time_complexity.status === 'partial' ? 'text-amber-700 bg-amber-100' : evaluation.time_complexity.status === 'uncertain' ? 'text-slate-600 bg-slate-200' : 'text-red-700 bg-red-100'}`}>{evaluation.time_complexity.status}</span>
+                        <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded ${evaluation.time_complexity.status === 'correct' ? 'text-green-700 bg-green-100' : evaluation.time_complexity.status === 'partial' ? 'text-amber-700 bg-amber-100' : evaluation.time_complexity.status === 'uncertain' ? 'text-slate-600 bg-slate-200' : 'text-red-700 bg-red-100'}`}>
+                          {evaluation.time_complexity.status === 'uncertain' ? '? Uncertain' : evaluation.time_complexity.status}
+                        </span>
                       </div>
                       <div className="text-sm space-y-1 mt-2 mb-2">
                         <p><span className="text-slate-500">Your answer:</span> {evaluation.time_complexity.user_answer}</p>
-                        <p><span className="text-slate-500">Expected:</span> {evaluation.time_complexity.expected}</p>
+                        {evaluation.time_complexity.status !== 'uncertain' && <p><span className="text-slate-500">Expected:</span> {evaluation.time_complexity.expected}</p>}
                       </div>
                       <p className="text-sm text-slate-700 border-t border-slate-200/50 pt-2">{evaluation.time_complexity.feedback}</p>
+                      {evaluation.time_complexity.status === 'uncertain' && (
+                        <p className="text-xs text-slate-500 mt-2 italic">The available problem information is insufficient to confidently evaluate this complexity.</p>
+                      )}
                     </div>
                     
                     <div className={`p-4 rounded-lg border ${evaluation.space_complexity.status === 'correct' ? 'bg-green-50 border-green-200' : evaluation.space_complexity.status === 'partial' ? 'bg-amber-50 border-amber-200' : evaluation.space_complexity.status === 'uncertain' ? 'bg-slate-100 border-slate-200' : 'bg-red-50 border-red-200'}`}>
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="font-semibold text-slate-900">Space</h3>
-                        <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded ${evaluation.space_complexity.status === 'correct' ? 'text-green-700 bg-green-100' : evaluation.space_complexity.status === 'partial' ? 'text-amber-700 bg-amber-100' : evaluation.space_complexity.status === 'uncertain' ? 'text-slate-600 bg-slate-200' : 'text-red-700 bg-red-100'}`}>{evaluation.space_complexity.status}</span>
+                        <span className={`text-xs font-bold uppercase tracking-wider px-2 py-1 rounded ${evaluation.space_complexity.status === 'correct' ? 'text-green-700 bg-green-100' : evaluation.space_complexity.status === 'partial' ? 'text-amber-700 bg-amber-100' : evaluation.space_complexity.status === 'uncertain' ? 'text-slate-600 bg-slate-200' : 'text-red-700 bg-red-100'}`}>
+                          {evaluation.space_complexity.status === 'uncertain' ? '? Uncertain' : evaluation.space_complexity.status}
+                        </span>
                       </div>
                       <div className="text-sm space-y-1 mt-2 mb-2">
                         <p><span className="text-slate-500">Your answer:</span> {evaluation.space_complexity.user_answer}</p>
-                        <p><span className="text-slate-500">Expected:</span> {evaluation.space_complexity.expected}</p>
+                        {evaluation.space_complexity.status !== 'uncertain' && <p><span className="text-slate-500">Expected:</span> {evaluation.space_complexity.expected}</p>}
                       </div>
                       <p className="text-sm text-slate-700 border-t border-slate-200/50 pt-2">{evaluation.space_complexity.feedback}</p>
+                      {evaluation.space_complexity.status === 'uncertain' && (
+                        <p className="text-xs text-slate-500 mt-2 italic">The available problem information is insufficient to confidently evaluate this complexity.</p>
+                      )}
                     </div>
                   </div>
                 </div>

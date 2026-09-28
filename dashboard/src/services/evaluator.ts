@@ -52,6 +52,9 @@ insufficient to confidently evaluate correctness or complexity,
 return the corresponding evaluation as "uncertain" rather than
 pretending certainty.
 
+Do NOT infer that a variable number of scores exists merely because the
+reference implementation reads a variable-length input line.
+
 Problem Title: ${problemTitle}
 Reference Solution Language: ${language}
 Reference Solution Code:
@@ -76,11 +79,14 @@ Evaluate the student's recall against the reference solution and general princip
    - Infer the true expected time complexity from the reference solution and input variables.
    - DO NOT use simple string matching. You must semantically compare their answer.
    - Equivalent notations MUST be accepted (e.g., O(N*M) is the exact same as O(M*N) or O(N × M)). 
-   - If empty or you cannot confidently determine the expected complexity, return 'uncertain'.
+   - If the original problem constraints are unavailable and the complexity depends on constraints that cannot be confidently established from the available context, return 'uncertain' instead of 'incorrect'.
+   - Do NOT invent variables such as M or L merely because the reference implementation could theoretically support them.
+   - Only return 'incorrect' if it can be confidently established as wrong from the available context.
 
 3. SPACE COMPLEXITY: 
    - Infer the true expected space complexity from the reference solution.
    - DO NOT use simple string matching. Evaluate semantically.
+   - If constraints are missing, return 'uncertain' instead of 'incorrect'. Do NOT invent variables.
 
 Return ONLY a valid JSON object matching this schema:
 {
