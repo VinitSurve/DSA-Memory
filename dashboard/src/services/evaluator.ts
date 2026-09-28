@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { z } from 'zod';
 
-const StatusEnum = z.enum(['correct', 'partial', 'incorrect', 'unclear']);
+const StatusEnum = z.enum(['correct', 'partial', 'incorrect', 'uncertain']);
 
 const EvaluationSchema = z.object({
   approach: z.object({
@@ -42,7 +42,15 @@ export async function evaluateRecall(
 
   const prompt = `You are a computer science tutor evaluating a student's recall of a Data Structures and Algorithms problem.
 
-NOTE: The full problem statement text is not available. You must infer the problem constraints and definitions of input variables (like N or M) directly from the problem title and the reference solution provided below.
+The original problem statement is unavailable.
+
+Do NOT invent constraints or input definitions that are not supported
+by the available context.
+
+If the available title, reference solution, and user answer are
+insufficient to confidently evaluate correctness or complexity,
+return the corresponding evaluation as "uncertain" rather than
+pretending certainty.
 
 Problem Title: ${problemTitle}
 Reference Solution Language: ${language}
@@ -61,14 +69,14 @@ Evaluate the student's recall against the reference solution and general princip
 1. APPROACH: Is their conceptual algorithm valid for solving this problem efficiently? 
    - DO NOT require them to match the reference solution exactly. Valid alternative algorithms are perfectly acceptable if they correctly solve the problem.
    - DO NOT penalize for different variable names.
-   - If their answer is empty or nonsensical, it is 'unclear'.
+   - If their answer is empty or nonsensical, it is 'uncertain'.
    - Explain why it is incorrect or what is missing if partial.
 
 2. TIME COMPLEXITY: 
    - Infer the true expected time complexity from the reference solution and input variables.
    - DO NOT use simple string matching. You must semantically compare their answer.
    - Equivalent notations MUST be accepted (e.g., O(N*M) is the exact same as O(M*N) or O(N × M)). 
-   - If empty, it is 'unclear'.
+   - If empty or you cannot confidently determine the expected complexity, return 'uncertain'.
 
 3. SPACE COMPLEXITY: 
    - Infer the true expected space complexity from the reference solution.
@@ -77,17 +85,17 @@ Evaluate the student's recall against the reference solution and general princip
 Return ONLY a valid JSON object matching this schema:
 {
   "approach": {
-    "status": "correct" | "partial" | "incorrect" | "unclear",
+    "status": "correct" | "partial" | "incorrect" | "uncertain",
     "feedback": "string"
   },
   "time_complexity": {
-    "status": "correct" | "partial" | "incorrect" | "unclear",
+    "status": "correct" | "partial" | "incorrect" | "uncertain",
     "user_answer": "string",
     "expected": "string",
     "feedback": "string"
   },
   "space_complexity": {
-    "status": "correct" | "partial" | "incorrect" | "unclear",
+    "status": "correct" | "partial" | "incorrect" | "uncertain",
     "user_answer": "string",
     "expected": "string",
     "feedback": "string"
