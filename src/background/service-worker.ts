@@ -10,8 +10,17 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendRes
       sendResponse(result);
       
       if (result.success) {
+        // Save the last successful submission to local storage for the popup
+        chrome.storage.local.set({
+          lastSubmission: {
+            title: message.payload.title,
+            platform: message.payload.platform,
+            time: new Date().toISOString(),
+            duplicate: result.duplicate
+          }
+        });
+
         if (!result.duplicate) {
-          // Could optionally send a message back to the tab to show a success toast
           chrome.tabs.sendMessage(sender.tab!.id!, { type: 'SHOW_TOAST', payload: { message: '✓ Saved to DSA Memory', subtext: `${message.payload.title} (${message.payload.platform})` } }).catch(() => {});
         } else {
           chrome.tabs.sendMessage(sender.tab!.id!, { type: 'SHOW_TOAST', payload: { message: 'Already saved' } }).catch(() => {});
