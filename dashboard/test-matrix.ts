@@ -37,8 +37,8 @@ interface TestCase {
   space: string;
   expected: {
     approach: string | string[];
-    time: string;
-    space: string;
+    time: string | string[];
+    space: string | string[];
   };
 }
 
@@ -208,7 +208,7 @@ async function runTests() {
 
     console.log(JSON.stringify(result, null, 2));
 
-    let spaceExpected = test.expected.space;
+    let spaceExpected: string | string[] = test.expected.space;
 
     // Handle test 8 space specifically based on what the evaluator does
     if (test.id === 8) {
