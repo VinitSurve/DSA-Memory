@@ -170,7 +170,7 @@ async function runTests() {
   const results = [];
   let allPass = true;
 
-  for (const test of tests.filter(t => [9, 13].includes(t.id))) {
+  for (const test of tests) {
     console.log(`\n\n--- Running Test ${test.id}: ${test.name} ---`);
 
     // retry logic due to rate limiting or occasional AI unreliability
