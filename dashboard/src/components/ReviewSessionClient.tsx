@@ -8,11 +8,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import CodeViewer from './CodeViewer';
 import { EvaluationResult } from '@/services/evaluator';
+import { CodeChoiceChallenge } from '@/services/question-generator';
 
-type Step = 'RECALL' | 'EVALUATE' | 'REVEAL' | 'DONE';
+type Step = 'CHOOSE_MODE' | 'MANUAL_RECALL' | 'INTERACTIVE_RECALL' | 'EVALUATE' | 'REVEAL' | 'DONE';
 
 export default function ReviewSessionClient({ problem }: { problem: ProblemDetail }) {
-  const [step, setStep] = useState<Step>('RECALL');
+  const [step, setStep] = useState<Step>('CHOOSE_MODE');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [nextReviewDate, setNextReviewDate] = useState<string | null>(null);
@@ -22,9 +23,32 @@ export default function ReviewSessionClient({ problem }: { problem: ProblemDetai
   const [space, setSpace] = useState('');
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   
+  const [isGeneratingChallenge, setIsGeneratingChallenge] = useState(false);
+  const [challenge, setChallenge] = useState<CodeChoiceChallenge | null>(null);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [showChallengeFeedback, setShowChallengeFeedback] = useState(false);
+
   const router = useRouter();
 
   const handleReveal = () => setStep('REVEAL');
+
+  const handleStartManual = () => setStep('MANUAL_RECALL');
+
+  const handleStartInteractive = async () => {
+    setIsGeneratingChallenge(true);
+    setStep('INTERACTIVE_RECALL');
+    
+    const latestSubmission = problem.submissions && problem.submissions.length > 0 ? problem.submissions[0] : null;
+    if (!latestSubmission) {
+      setIsGeneratingChallenge(false);
+      return;
+    }
+    
+    const { getRecallChallenge } = await import('@/app/actions');
+    const result = await getRecallChallenge(problem.title, latestSubmission.solution_code, latestSubmission.language || 'python');
+    setChallenge(result);
+    setIsGeneratingChallenge(false);
+  };
 
   const handleEvaluate = async () => {
     setIsEvaluating(true);
@@ -101,7 +125,115 @@ export default function ReviewSessionClient({ problem }: { problem: ProblemDetai
         </Link>
       </div>
 
-      {(step === 'RECALL' || step === 'EVALUATE') && (
+      {step === 'CHOOSE_MODE' && (
+        <div className="space-y-6">
+          <div className="bg-white border border-slate-200 rounded-xl p-8 shadow-sm text-center">
+            <h2 className="text-xl font-bold text-slate-900 mb-2">How would you like to review?</h2>
+            <p className="text-slate-500 mb-8 max-w-lg mx-auto">Choose between a quick interactive challenge based on your past code, or writing out your full approach manually.</p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+              <button 
+                onClick={handleStartInteractive}
+                className="flex flex-col items-center justify-center p-6 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 hover:border-blue-300 transition-colors group"
+              >
+                <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m9 12 2 2 4-4"/></svg>
+                </div>
+                <h3 className="font-bold text-blue-900 mb-2">Interactive Recall</h3>
+                <p className="text-sm text-blue-700/80">Quick code challenge based on your actual solution.</p>
+              </button>
+
+              <button 
+                onClick={handleStartManual}
+                className="flex flex-col items-center justify-center p-6 bg-slate-50 border border-slate-200 rounded-xl hover:bg-slate-100 hover:border-slate-300 transition-colors group"
+              >
+                <div className="w-12 h-12 bg-slate-200 text-slate-600 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>
+                </div>
+                <h3 className="font-bold text-slate-900 mb-2">Manual Recall</h3>
+                <p className="text-sm text-slate-500">Write down your approach and complexities.</p>
+              </button>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-slate-100">
+              <button 
+                onClick={handleReveal}
+                className="text-slate-500 hover:text-slate-900 text-sm font-medium transition-colors"
+              >
+                Skip straight to solution
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {step === 'INTERACTIVE_RECALL' && (
+        <div className="space-y-6">
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
+            {isGeneratingChallenge ? (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mb-4"></div>
+                <p className="text-slate-600 font-medium">Analyzing your past code and generating a challenge...</p>
+              </div>
+            ) : challenge ? (
+              <div className="space-y-6 animate-in fade-in">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">Recall Challenge</span>
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-900">{challenge.promptText}</h2>
+                </div>
+                
+                <div className="bg-slate-50 rounded-lg p-4 border border-slate-200">
+                  <CodeViewer code={challenge.codeSnippet} language={latestSubmission?.language || 'text'} />
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {challenge.options.map((option, idx) => (
+                    <button
+                      key={idx}
+                      disabled={showChallengeFeedback}
+                      onClick={() => {
+                        setSelectedOption(option);
+                        setShowChallengeFeedback(true);
+                      }}
+                      className={`
+                        p-4 text-left rounded-lg border font-mono text-sm transition-all
+                        ${showChallengeFeedback
+                          ? option === challenge.correctAnswer
+                            ? 'bg-green-50 border-green-500 text-green-900 shadow-sm ring-1 ring-green-500' // Correct answer gets highlighted even if not selected
+                            : option === selectedOption
+                              ? 'bg-red-50 border-red-500 text-red-900 shadow-sm ring-1 ring-red-500' // Incorrect selection
+                              : 'bg-white border-slate-200 text-slate-400 opacity-50' // Unselected incorrect
+                          : 'bg-white border-slate-200 text-slate-700 hover:border-blue-400 hover:shadow-sm'
+                        }
+                      `}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+                
+                {showChallengeFeedback && (
+                  <div className={`mt-6 p-4 rounded-lg border animate-in fade-in slide-in-from-bottom-2 ${selectedOption === challenge.correctAnswer ? 'bg-green-50 border-green-200' : 'bg-amber-50 border-amber-200'}`}>
+                    <h3 className={`font-bold mb-1 ${selectedOption === challenge.correctAnswer ? 'text-green-800' : 'text-amber-800'}`}>
+                      {selectedOption === challenge.correctAnswer ? 'Great job!' : 'Not quite.'}
+                    </h3>
+                    <p className="text-slate-700">{challenge.explanation}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-red-500 mb-4">Could not generate a challenge from the stored solution.</p>
+                <button onClick={handleStartManual} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-lg font-medium text-slate-700">Fallback to Manual</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {(step === 'MANUAL_RECALL' || step === 'EVALUATE') && (
         <div className="space-y-6">
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-sm">
             <h2 className="text-lg font-semibold text-slate-900 mb-4">How would you solve this problem?</h2>
@@ -131,7 +263,7 @@ export default function ReviewSessionClient({ problem }: { problem: ProblemDetai
               </div>
             </div>
             
-            {step === 'RECALL' && (
+            {(step === 'MANUAL_RECALL') && (
               <div className="mt-8 flex justify-end gap-3">
                 <button 
                   onClick={handleReveal}
@@ -225,28 +357,30 @@ export default function ReviewSessionClient({ problem }: { problem: ProblemDetai
         </div>
       )}
 
-      {step === 'REVEAL' && (
+      {(step === 'REVEAL' || showChallengeFeedback) && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-            <div className="bg-slate-50 border-b border-slate-200 px-4 py-3 flex justify-between items-center">
-              <h2 className="font-semibold text-slate-700">Your solution</h2>
-              <span className="text-sm font-medium text-slate-500 bg-white border border-slate-200 px-2 py-1 rounded">
-                {latestSubmission?.language || 'Code'}
-              </span>
-            </div>
-            
-            <CodeViewer 
-              code={latestSubmission?.solution_code || 'No code found'} 
-              language={latestSubmission?.language || 'text'} 
-            />
-            
-            {otherSubmissionsCount > 0 && (
-              <div className="bg-slate-50 border-t border-slate-200 px-4 py-3 text-sm text-slate-600 flex justify-between items-center">
-                <span>You also have {otherSubmissionsCount} other submission{otherSubmissionsCount > 1 ? 's' : ''}</span>
-                <Link href={`/problems/${problem.id}`} className="text-blue-600 hover:underline">View all</Link>
+          {step === 'REVEAL' && (
+            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+              <div className="bg-slate-50 border-b border-slate-200 px-4 py-3 flex justify-between items-center">
+                <h2 className="font-semibold text-slate-700">Your solution</h2>
+                <span className="text-sm font-medium text-slate-500 bg-white border border-slate-200 px-2 py-1 rounded">
+                  {latestSubmission?.language || 'Code'}
+                </span>
               </div>
-            )}
-          </div>
+              
+              <CodeViewer 
+                code={latestSubmission?.solution_code || 'No code found'} 
+                language={latestSubmission?.language || 'text'} 
+              />
+              
+              {otherSubmissionsCount > 0 && (
+                <div className="bg-slate-50 border-t border-slate-200 px-4 py-3 text-sm text-slate-600 flex justify-between items-center">
+                  <span>You also have {otherSubmissionsCount} other submission{otherSubmissionsCount > 1 ? 's' : ''}</span>
+                  <Link href={`/problems/${problem.id}`} className="text-blue-600 hover:underline">View all</Link>
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-6 text-center shadow-sm">
             <h3 className="text-lg font-semibold text-blue-900 mb-6">How well did you remember this?</h3>
