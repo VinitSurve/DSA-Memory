@@ -104,7 +104,7 @@ export async function executeWithGemini<T>(
   }
 
   let attempts = 0;
-  const maxAttempts = keyPool.length * 2; // Allow some retries if keys are on cooldown
+  const maxAttempts = Math.max(12, keyPool.length * 4); // Allow sufficient retries for transient 503/429 spikes
 
   while (attempts < maxAttempts) {
     const ks = getAvailableKey();
@@ -138,8 +138,9 @@ export async function executeWithGemini<T>(
       }
       
       if (classification.retryable) {
-        console.error(`[${actionName}] failed using key_slot: ${ks.slot}. Reason: ${classification.reason}. Putting key on 60s cooldown.`);
-        ks.cooldownUntil = Date.now() + 60000; // 60s cooldown
+        const cooldownMs = classification.reason === 'HIGH_DEMAND_OR_503' ? 3000 : 15000;
+        console.error(`[${actionName}] failed using key_slot: ${ks.slot}. Reason: ${classification.reason}. Putting key on ${cooldownMs/1000}s cooldown.`);
+        ks.cooldownUntil = Date.now() + cooldownMs;
         continue;
       }
       
